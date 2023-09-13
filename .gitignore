@@ -1,0 +1,6 @@
+#untrack files
+node_modules
+package-lock.json
+archive/
+gauge-display/charts
+gauge-display/lib

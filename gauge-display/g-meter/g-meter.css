@@ -1,0 +1,95 @@
+.gmeter {
+    display: inline-block;
+    position: absolute;
+    margin-top: -40.5px;
+}
+
+.crosshairs {
+    background-color: #333333;
+    position: relative;
+    box-shadow: 0 0 1px black;
+}
+
+.outer-ring {
+    position: relative;
+    top: -40px;
+}
+
+.g-ring {
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 3px solid #333333;
+}
+
+.label {
+    font-size: 12px;
+}
+
+#meter-holder {
+    top: -29px;
+    left: -15px;
+}
+
+#half-g {
+    position: relative;
+    top: -67px;
+    left: -42px;
+}
+
+#one-g {
+    position: relative;
+    top: -67px;
+    left: -38px;
+}
+
+#crosshairs-vertical {
+    height: 203px;
+    width: 3px;
+    left: -40px;
+    top: 93px;
+}
+
+#crosshairs-horizontal {
+    height: 3px;
+    width: 203px;
+    top: -78.5px;
+    left: 38px;
+}
+
+#g-diameter {
+    height: 226px;
+    width: 226px;
+    box-shadow: inset 0 0 2px #333333;
+    border-color: #cccccc;
+}
+
+#middle-ring {
+    position: relative;
+    height: 169.5px;
+    width: 169.5px;
+    top: 23px;
+    left: 55.5px;
+    box-shadow: 0 0 2px #333333;
+}
+
+#inner-ring {
+    height: 113px;
+    width: 113px;
+    position: relative;
+    top: 25.25px;
+    left: 25.25px;
+    box-shadow: 0 0 2px #333333;
+}
+
+#cursor {
+    background-color: #EF0723;
+    border-radius: 50%;
+    height: 15px;
+    width: 15px;
+    left: 117.5px;
+    top: 117px;
+    position: absolute;
+    background: radial-gradient(circle at 5px 5px, #EF0723, rgb(53, 0, 0));
+    /* box-shadow: 0 0 2px #000000; */
+    box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.75);
+}

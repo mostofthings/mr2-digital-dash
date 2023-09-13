@@ -1,0 +1,141 @@
+@font-face {
+	font-family: 'DroidSansMono';
+	src: url("./lib/DroidSansMono.ttf") format('truetype');
+	font-style: normal;
+	font-weight: 100;
+}
+
+@font-face {
+	font-family: 'Montserrat';
+	src: url("./lib/Montserrat-Regular.ttf") format('truetype');
+	font-style: normal;
+	font-weight: 600;
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	user-select: none;
+}
+
+html {
+	/*cursor: none;*/
+}
+
+::-webkit-scrollbar {
+	display: none;
+}
+
+body {
+	font-family: 'DroidSansMono', sans-serif;
+	overflow: hidden;
+}
+
+section {
+	padding: 1rem;
+	min-width: 100vw;
+	height: 100vh;
+	scroll-snap-align: start;
+	position: relative;
+}
+
+div {
+	display: inline-block;
+}
+
+h1 {
+	font-size: 50px;
+}
+
+.slider {
+	scroll-snap-type: x mandatory;
+	display: flex;
+	-webkit-overflow-scrolling: touch;
+	overflow-x: scroll;
+}
+
+.icono-moon {}
+
+#caret-up, #caret-down {
+	position: relative;
+	color: black;
+	transition: color 1.5s linear;
+}
+
+#caret-up.night, #caret-down.night {
+	color: white;
+}
+
+#caret-up {
+	top: -95px;
+	left: 738px;
+}
+
+#caret-down {
+	top: -69px;
+	left: 694px;
+}
+
+#chart {
+	background-color: white;
+	transition: background-color 1.5s linear;
+}
+
+#chart.night {
+	background-color: black;
+}
+
+#gauge-container {
+	/* background: rgb(0,0,0);
+	background: linear-gradient(356deg, rgba(0,0,0,1) 0%, rgba(149,0,189,1) 100%); */
+	font-family: 'DroidSansMono', sans-serif;
+	color: #f08800;
+	background: black;
+	background-size: 400% 400%;
+	-webkit-animation: AnimationName 15s ease infinite;
+	-moz-animation: AnimationName 15s ease infinite;
+	animation: AnimationName 15s ease infinite;
+}
+
+.gauge-icon {
+	max-height: 20px;
+	max-width: 20px;
+	margin-left: 5px;
+}
+
+.gauge-display {
+	display: flex;
+	align-content: center;
+}
+
+#gauge-container.night {
+	background: black;
+}
+
+#chart {}
+
+.gauge {
+	position: relative;
+	top: -20px;
+}
+
+#gauge-fuel, #gauge-oil-temp, #gauge-rpm {
+	position: relative;
+	top: -40px;
+}
+
+#night-mode {
+	display: inline-block;
+	height: 22px;
+	width: 22px;
+	top: -48px;
+	left: -2px;
+	margin: 6px;
+	color: black;
+	transition: color 1.5s linear;
+}
+
+#night-mode.night {
+	color: white;
+}
