@@ -12,11 +12,25 @@
 	font-weight: 600;
 }
 
+
 * {
 	box-sizing: border-box;
 	margin: 0;
 	padding: 0;
 	user-select: none;
+
+	--blue: #95f6fd;
+	--blue-transparent: #95f6fdb3;
+	--yellow: #d59835;
+	--red: #ba4b5b;
+	--green: #4a9574;
+	--o2-red: #E53935;
+	--o2-yellow: #FFEA00;
+	--o2-green: #00E676;
+}
+
+canvas {
+	display: inline-block;
 }
 
 html {
@@ -40,10 +54,6 @@ section {
 	position: relative;
 }
 
-div {
-	display: inline-block;
-}
-
 h1 {
 	font-size: 50px;
 }
@@ -55,47 +65,101 @@ h1 {
 	overflow-x: scroll;
 }
 
-.icono-moon {}
+#o2-readout {
+	color: var(--blue);
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	align-items: end;
+	top: 98px;
+	left: 680px;
+	width: 120px;
+	height: 71.5px;
+	box-sizing: border-box;
+	border: 1px solid var(--blue-transparent);
+	padding-right: 3px;
+}
 
-#caret-up, #caret-down {
+#o2-readout .label {
+	font-size: 16px;
+	padding-left: 3px;
+}
+#o2-readout .readout {
+	font-size: 30px;
+}
+
+#max-value-container {
 	position: relative;
+	top: 350px;
+	left: -5px;
+	display: flex;
+	gap: 20px;
+}
+
+#max-value-container .container {
+	display: flex;
+	align-items: center;
+	border: 1px solid #95f6fdb3;
+	box-sizing: border-box;
+}
+
+#max-value-container span {
+	font-size: 30px;
+	margin-right: 3px;
+}
+
+.max-value-label {
+	display: flex;
+	flex-direction: column;
+	align-items: start;
+	margin-right: 12px;
+	padding-left: 3px;
+}
+
+#race-mode-button {
+	color: var(--blue);
+	height: 44px;
+	border: 2px solid var(--blue-transparent);
+	background-color: transparent;
+	box-sizing: border-box;
+	padding-left: 25px;
+	padding-right: 25px;
+}
+
+#race-mode-button.race-mode {
+	background-color: var(--blue-transparent);
 	color: black;
-	transition: color 1.5s linear;
 }
 
-#caret-up.night, #caret-down.night {
-	color: white;
+#temp-chart, #boost-chart {
+	width: 100%;
+	height: 100%;
 }
 
-#caret-up {
-	top: -95px;
-	left: 738px;
-}
-
-#caret-down {
-	top: -69px;
-	left: 694px;
-}
-
-#chart {
-	background-color: white;
-	transition: background-color 1.5s linear;
-}
-
-#chart.night {
-	background-color: black;
+.chart {
+	background-image: url('4.jpg');
+	background-size: cover;
 }
 
 #gauge-container {
-	/* background: rgb(0,0,0);
-	background: linear-gradient(356deg, rgba(0,0,0,1) 0%, rgba(149,0,189,1) 100%); */
 	font-family: 'DroidSansMono', sans-serif;
-	color: #f08800;
-	background: black;
-	background-size: 400% 400%;
-	-webkit-animation: AnimationName 15s ease infinite;
-	-moz-animation: AnimationName 15s ease infinite;
-	animation: AnimationName 15s ease infinite;
+	color: var(--blue);
+	background-image: url('4.jpg');
+	background-size: cover;
+}
+
+#gauge-container.green {
+	background-color: var(--o2-green);
+	background-image: none;
+}
+#gauge-container.yellow {
+	background-color: var(--o2-yellow);
+	background-image: none;
+}
+#gauge-container.red {
+	background-color: var(--o2-red);
+	background-image: none;
 }
 
 .gauge-icon {
@@ -107,35 +171,4 @@ h1 {
 .gauge-display {
 	display: flex;
 	align-content: center;
-}
-
-#gauge-container.night {
-	background: black;
-}
-
-#chart {}
-
-.gauge {
-	position: relative;
-	top: -20px;
-}
-
-#gauge-fuel, #gauge-oil-temp, #gauge-rpm {
-	position: relative;
-	top: -40px;
-}
-
-#night-mode {
-	display: inline-block;
-	height: 22px;
-	width: 22px;
-	top: -48px;
-	left: -2px;
-	margin: 6px;
-	color: black;
-	transition: color 1.5s linear;
-}
-
-#night-mode.night {
-	color: white;
 }
