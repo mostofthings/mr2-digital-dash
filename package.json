@@ -6,15 +6,18 @@
   "dependencies": {
     "express": "^4.17.1",
     "serialport": "^8.0.7",
+    "shelljs": "^0.8.5",
     "socket.io": "^2.3.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^8.49.0"
+  },
   "scripts": {
     "start": "node index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mostofthings/digital-dash.git"
+    "url": "git+https://github.com/mostofthings/mr2-digital-dash.git"
   },
   "author": "Jay Schroeder",
   "license": "ISC",
