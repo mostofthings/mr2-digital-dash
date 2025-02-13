@@ -20,6 +20,6 @@ export class O2Readout {
 
   update(newValue) {
     this.value = newValue;
-    this.readoutElement.innerText = newValue.toFixed(1);
+    this.readoutElement.innerText = newValue.toFixed(2);
   }
 }

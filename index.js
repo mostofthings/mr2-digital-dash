@@ -1,58 +1,160 @@
-const SerialPort = require('serialport');
-const Readline = require('@serialport/parser-readline');
+const can = require('socketcan');
+const struct = require('@binary-files/structjs');
+const Struct = struct.Struct;
+const shell = require('shelljs');
+
+const {SerialPort} = require('serialport');
+const {ReadlineParser} = require('@serialport/parser-readline');
 const express = require('express');
 const portString = process.platform === 'win32' ? 'COM3' : '/dev/ttyACM0';
-const shell = require('shelljs');
-const port = new SerialPort(portString);
+const port = new SerialPort({path: portString, baudRate: 9600});
 const app = express();
 const server = app.listen(3000);
 const socket = require('socket.io');
 const io = socket(server);
 
-// let lastKnownGoodRPM = 6000;
-const SensorType = {
-  WaterTemp: 'WT',
-  BoostPressure: 'BP',
-  WideBand: 'WB',
-  OilPressure: 'OP',
-  OilTemp: 'OT',
-  IntakeAirTemp: 'AT',
-};
-
-port.on('close', () => {
-  shutdownPi();
-});
-
+//** Hosting **//
 app.use('/gauge-display', express.static(__dirname + '/gauge-display'));
 app.get('/gauge-display', (req, res) => {
   res.sendFile(__dirname + '/gauge-display/index.html');
 });
-//
-// app.get('/change-night', (req, res) => {
-//   const brightness = req.query.brightness;
-//   res.status(200).end();
-//   printToSerial(brightness);
-// });
-//
-// app.get('/master-warn', (req, res) => {
-//   const warnState = req.query.warn;
-//   res.status(200).end();
-//   printToSerial('warn');
-// });
-
-const parser = port.pipe(new Readline());
-parser.on('data', sendSensorData);
 
 io.sockets.on('connection', (socket) => console.log(socket.id));
 
-const aemFluidTempSensorRawValues = [16, 22, 29, 39, 51, 68, 90, 121, 162, 217, 291, 379, 483, 595, 708, 808, 884, 939];
-const correspondingAemFluidTemperatures = [302, 284, 266, 248, 230, 212, 194, 176, 158, 140, 122, 104, 86, 68, 50, 32, 14, -4];
+main();
 
-const aemIntakeTempSensorRawValues = [20, 27, 33, 43, 57, 75, 100, 135, 180, 239, 317, 409, 516, 626, 735, 829, 898, 949];
-// const aemIntakeTempSensorVoltages = [0.1, 0.13, 0.16, 0.21, 0.28, 0.37, 0.49, 0.66, 0.88, 1.17, 1.55, 2, 2.52, 3.06, 3.59, 4.05, 4.39, 4.64];
-const correspondingAemIntakeTemperatures = [302, 284, 266, 248, 230, 212, 194, 176, 158, 140, 122, 104, 86, 68, 50, 32, 14, -4];
+async function main() {
+  const channel = can.createRawChannel('can0');
 
-function sendSensorData(rawData) {
+  channel.addListener('onMessage', handleRawMessages);
+  channel.start();
+}
+
+function handleRawMessages(message) {
+  const id = message.id;
+  switch (id) {
+  case 1:
+    parseFrame1(message.data);
+    break;
+  case 2:
+    parseFrame2(message.data);
+    break;
+  case 3:
+    parseFrame3(message.data);
+    break;
+  case 4:
+    parseFrame4(message.data);
+    break;
+  }
+}
+
+// store raw, offset values;
+let rpm = 0;
+let boost = 0;
+let tps = 0;
+let coolantTemp = 0;
+let iat = 0;
+let voltage = 0;
+let oilTemp = 0;
+let oilPressure = 0;
+let fuelPressure = 0;
+let lambda = 0;
+let knockLevel = 0;
+let faultCode = 0;
+let gearPosition = 0;
+
+const rpmAndBoostStruct = new Struct(
+  Struct.Uint16('rpm'),
+  Struct.Uint16('boost'),
+  Struct.Uint8('coolantTemp'),
+  Struct.Uint8('iat'),
+  Struct.Uint8('voltage'),
+  Struct.Uint8('oilTemp')
+);
+function parseFrame1(data) {
+  const object = rpmAndBoostStruct.createObject(data.buffer, 0);
+  rpm = object.rpm;
+  boost = object.boost - 100;
+  coolantTemp = object.coolantTemp - 50;
+  iat = object.iat - 50;
+  voltage = object.voltage * 0.1;
+  oilTemp = object.oilTemp - 50;
+}
+
+const tpsStruct = new Struct(
+  Struct.Uint16('tps'),
+  Struct.Uint16('ignitionAngle'),
+  Struct.Uint8('wheelSpeed'),
+  Struct.Uint8('oilPressure'),
+  Struct.Uint8('fuelPressure'),
+  Struct.Uint8('ecuTemp'),
+);
+function parseFrame2(data) {
+  const object = tpsStruct.createObject(data.buffer, 0);
+  tps = object.tps * 0.1;
+  oilPressure = object.oilPressure * 10;
+  fuelPressure = object.fuelPressure * 10;
+}
+
+const lambdaStruct = new Struct(
+  Struct.Uint16('lambda')
+);
+function parseFrame3(data) {
+  const object = lambdaStruct.createObject(data.buffer, 0,);
+  lambda = object.lambda * 0.001;
+}
+
+const knockStruct = new Struct(
+  Struct.Uint8('gearPosition'),
+  Struct.Uint8('fuelCut'),
+  Struct.Uint8('ignitionCut'),
+  Struct.Uint16('injectorPulseWidth'),
+  Struct.Uint8('faultCode'),
+  Struct.Uint16('knockLevel'),
+);
+function parseFrame4(data) {
+  const object = knockStruct.createObject(data.buffer, 0);
+  gearPosition = object.gearPosition;
+  knockLevel = object.knockLevel * 5;
+  faultCode = object.faultCode;
+}
+
+function sendWebsocketData() {
+  const data = {
+    rpm: rpm.toString(),
+    boost: (kpaToPsi(boost)).toFixed(1),
+    iat: (celciusToDegF(iat)).toFixed(),
+    voltage: (voltage).toFixed(1),
+    oilTemp: (celciusToDegF(oilTemp)).toFixed(),
+    coolantTemp: (celciusToDegF(coolantTemp)).toFixed(),
+    oilPressure: kpaToPsi(oilPressure).toFixed(),
+    fuelPressure: kpaToPsi(fuelPressure).toFixed(),
+    tps: tps.toFixed(1),
+    lambda: lambda.toFixed(2),
+    knockLevel: knockLevel.toString(),
+    faultCode: faultCode.toString(),
+    gearPosition: gearPosition.toString(),
+    timestamp: new Date(),
+  };
+
+  io.emit('sensor', data);
+}
+setInterval(sendWebsocketData, 100);
+
+//** Math **//
+function celciusToDegF(celcius) {
+  return celcius * 9 / 5 + 32;
+}
+
+function kpaToPsi(kpa) {
+  return kpa * 0.145;
+}
+
+//** Arduino Communication **//
+const parser = port.pipe(new ReadlineParser());
+parser.on('data', onReceiveArduinoMessage);
+
+function onReceiveArduinoMessage(rawData) {
   const data = rawData.trim();
   switch (data) {
   case 'dash-lights-on':
@@ -65,110 +167,9 @@ function sendSensorData(rawData) {
     shutdownPi();
     return;
   }
-
-  const allReadings = data.split(',');
-  const readingsToSend = {};
-
-  allReadings.forEach(reading => {
-    const type = reading.substring(0, 2);
-    const valueString = reading.substring(2);
-    const value = parseInt(valueString);
-
-    switch (type) {
-    case SensorType.WaterTemp:
-      if (value < 16) {
-        readingsToSend.waterTemp = 302;
-      } else if (value <= 884) {
-        const unroundedWaterTemp = getTempInF(value, aemFluidTempSensorRawValues, correspondingAemFluidTemperatures);
-        readingsToSend.waterTemp = Math.round(unroundedWaterTemp);
-      } else if (value > 884) {
-        readingsToSend.waterTemp = -4;
-      }
-      break;
-    case SensorType.OilPressure:
-      const oilPSI = value * .18 - 18.75;
-      if (oilPSI > 0) {
-        readingsToSend.oilPressure = Math.round(oilPSI);
-      } else {
-        readingsToSend.oilPressure = 0;
-      }
-      break;
-    case SensorType.OilTemp:
-      if (value < 121) {
-        readingsToSend.oilTemp = -4;
-      } else if (value <= 974) {
-        const unroundedOilTemp = getTempInF(value, aemFluidTempSensorRawValues, correspondingAemFluidTemperatures);
-        readingsToSend.oilTemp = Math.round(unroundedOilTemp);
-      } else if (value > 974) {
-        readingsToSend.oilTemp = 240;
-      }
-      break;
-    case SensorType.WideBand:
-      const afr = value * .01161 + 7.312;
-      if (afr > 8) {
-        readingsToSend.wideband = afr.toFixed(1);
-      } else {
-        readingsToSend.wideband = 0;
-      }
-      break;
-    case SensorType.BoostPressure:
-      // stock 3sgte, should get range between -23 and +26psi, with 2.3293v as 0psi, 477 raw-data crossover point
-      const voltage = getVoltageFromRawBytes(value);
-      const psi = (voltage - 2.3293) / .1025;
-      readingsToSend.boostPressure = psi.toFixed(1);
-
-      // for GM 3 bar map:
-      // const boost = value * 0.04451 - 14.45; //convert positive psi
-      // readingsToSend.boostPressure = boost.toFixed(1);
-      break;
-    case SensorType.IntakeAirTemp:
-      const iat = getTempInF(value, aemIntakeTempSensorRawValues, correspondingAemIntakeTemperatures);
-      readingsToSend.intakeAirTemp = iat;
-    // case SensorType.FuelPressure:
-    //   const fuelPSI = value;
-    //   readingsToSend.fuelPressure = fuelPSI;
-    //   break;
-    }
-  });
-
-  readingsToSend.timestamp = new Date();
-
-  io.emit('sensor', readingsToSend);
 }
 
-function getTempInF(value, rawDataSet, correspondingDataSet) {
-  const matchingIndex = rawDataSet.findIndex((_, index) => {
-    return (value >= rawDataSet[index] && value < rawDataSet[index + 1]);
-  });
-  if (matchingIndex === -1) {
-    return;
-  }
-  const sensorMax = rawDataSet[matchingIndex + 1];
-  const sensorMin = rawDataSet[matchingIndex];
-  const sensorRange = sensorMax - sensorMin;
-  const differenceToReading = value - sensorMin;
-
-  const percentile = differenceToReading / sensorRange;
-
-  const responseMax = correspondingDataSet[matchingIndex + 1];
-  const responseMin = correspondingDataSet[matchingIndex];
-  const responseRange = responseMax - responseMin;
-
-  return responseRange * percentile + responseMin;
-}
-
-// function printToSerial(message) {
-//   port.write(message + '\n', (err) => {
-//     if (err) {
-//       return console.log('Error on write: ', err.message);
-//     }
-//   });
-// }
-
-function getVoltageFromRawBytes(byteValue) {
-  return byteValue / 204.6;
-}
-
+//** Shell **//
 function dimDash() {
   shell.exec('gpio -g mode 19 pwm && gpio -g pwm 19 21');
 }
