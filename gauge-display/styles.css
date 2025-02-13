@@ -89,7 +89,7 @@ h1 {
 	font-size: 30px;
 }
 
-#max-value-container {
+#max-value-container, #value-container {
 	position: relative;
 	top: 350px;
 	left: -5px;
@@ -97,14 +97,14 @@ h1 {
 	gap: 20px;
 }
 
-#max-value-container .container {
+#max-value-container .container, #value-container .container {
 	display: flex;
 	align-items: center;
 	border: 1px solid #95f6fdb3;
 	box-sizing: border-box;
 }
 
-#max-value-container span {
+#max-value-container span, #value-container span {
 	font-size: 30px;
 	margin-right: 3px;
 }
@@ -142,7 +142,7 @@ h1 {
 	background-size: cover;
 }
 
-#gauge-container {
+#gauge-container, #race-display {
 	font-family: 'DroidSansMono', sans-serif;
 	color: var(--blue);
 	background-image: url('4.jpg');
@@ -171,4 +171,90 @@ h1 {
 .gauge-display {
 	display: flex;
 	align-content: center;
+}
+
+#shift-light {
+	display: flex;
+	gap: 3px;
+	width: 100%;
+	height: 40px;
+	justify-content: space-between;
+}
+
+@keyframes blinking {
+	0% {
+		background-color: var(--blue) !important;
+	}
+	100% {
+		background-color: black !important;
+	}
+}
+
+
+#shift-light div.green.illuminated {
+	background-color: var(--o2-green);
+}
+
+#shift-light div.yellow.illuminated {
+	background-color: var(--o2-yellow);
+}
+
+#shift-light div.red.illuminated {
+	background-color: var(--o2-red);
+}
+
+#shift-light div.flashing {
+	animation: blinking .15s infinite;
+}
+
+#shift-light div {
+	border: 1px solid white;
+	height: 40px;
+	width: 30px;
+
+}
+
+#rpm-gauge {
+
+	position: relative;
+	top: 58px;
+	left: 25px;
+	height: 235px;
+	width: 761px;
+	background: linear-gradient(to right,  var(--blue)78%, #00000000 78%);
+	mask-image: url('./fillet-filled.svg');
+	-webkit-mask-image: url('./fillet-filled.svg');
+	mask-repeat: no-repeat;
+	-webkit-mask-repeat: no-repeat;
+	mask-size: 100%;
+	-webkit-mask-size: 100%;
+}
+
+
+#rpm-gauge-outline {
+	position: absolute;
+	height: 240px;
+	width: 775px;
+	top: 113px;
+	left: 37px;
+	background-color: grey;
+	mask-image: url('./fillet-outline.svg');
+	-webkit-mask-image: url('./fillet-outline.svg');
+	mask-repeat: no-repeat;
+	-webkit-mask-repeat: no-repeat;
+	mask-size: 100%;
+	-webkit-mask-size: 100%;
+}
+
+#gear-indicator {
+	position: absolute;
+	top: 24px;
+	left: 33px;
+	font-size: 180px;
+}
+
+#value-container {
+	position: absolute;
+	top: 366px;
+	left: 8px;
 }

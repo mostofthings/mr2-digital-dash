@@ -54,14 +54,15 @@ export class O2Gauge {
       this.context.fillRect(xPosition, this.startYPosition, 20, this.indicatorHeight);
     }
 
-    const roundedValue = Math.floor((newValue * 1.66) - 13.28);
-    const highlightedSectorIndex = Math.min(Math.max(roundedValue, 0), 19);
+    // sectors will go from .75 on left to 1.25 on right
+    const percent = (newValue - 0.75) / 1.29;
+    const highlightedSectorIndex = Math.max(Math.min(Math.round(percent * 19), 19), 0);
 
     this.context.fillStyle = '#E53935';
-    if (newValue < 15) {
+    if (newValue < 1.02) {
       this.context.fillStyle = '#FFEA00';
     }
-    if (newValue < 12) {
+    if (newValue < 0.81) {
       this.context.fillStyle = '#00E676';
     }
     this.context.shadowColor = this.context.fillStyle;

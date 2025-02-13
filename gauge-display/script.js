@@ -1,13 +1,18 @@
 import BarGauge from './bar-gauge.js';
 import {O2Gauge} from './o2-gauge.js';
-import {MaxValueWidget} from './max-value-widget.js';
+import {ValueWidget} from './value-widget.js';
 import {createTempChart, updateTempChartData} from './temp-chart.js';
 import {O2Readout} from './o2-readout.js';
 import {defaultStops, iatStops, oilTempStops, waterTempStops} from './gauge-display-stops.js';
 import {createBoostChart, updateBoostChartData} from './boost-chart.js';
+import {
+  ShiftLight
+} from './shift-light.js';
+import {
+  RpmGauge
+} from './rpm-gauge.js';
 
 const LOGGING_MAX = 1000;
-
 
 
 window.onload = function () {
@@ -15,7 +20,8 @@ window.onload = function () {
   const gaugeContainer = document.getElementById('gauge-container');
 
   const datasets = {
-    boostPressure: getEmptyArray(),
+    rpm: getEmptyArray(),
+    boost: getEmptyArray(),
     wideband: getEmptyArray(),
     engineTemp: getEmptyArray(),
     oilTemp: getEmptyArray(),
@@ -27,8 +33,9 @@ window.onload = function () {
   createTempChart();
   createBoostChart();
 
+  //** Main display **//
   const o2Gauge = new O2Gauge(10, 5, 800, 75);
-  const boostGauge = new BarGauge(10, 100, 65, 500, -12, 18, defaultStops, './icons/psi.svg', 1);
+  const boostGauge = new BarGauge(10, 100, 65, 500, -12, 18, defaultStops, './icons/psi.svg');
   const waterTempGauge = new BarGauge(10, 190, 65, 250, 100, 240, waterTempStops, './icons/water-temp.svg');
   const oilPressureGauge = new BarGauge(410, 190, 65, 250, 10, 100, defaultStops, './icons/oil.svg');
   const intakeAirTempGauge = new BarGauge(10, 280, 65, 250, 50, 160, iatStops, './icons/intake-air-temp.svg');
@@ -36,15 +43,25 @@ window.onload = function () {
 
   const o2Readout = new O2Readout();
 
-  const maxBoostWidget = new MaxValueWidget(11, 365, 47, 135, 'BOOST', 1);
-  const maxIntakeAirTempWidget = new MaxValueWidget(155, 365, 47, 135, 'IAT');
-  const maxWaterTempWidget = new MaxValueWidget(155, 365, 47, 135, 'TEMP');
-  const maxOilTempWidget = new MaxValueWidget(155, 365, 47, 135, 'OIL');
+  const maxValueContainer = document.getElementById('max-value-container');
+  const maxBoostWidget = new ValueWidget('BOOST', maxValueContainer, true);
+  const maxIntakeAirTempWidget = new ValueWidget( 'IAT', maxValueContainer, true);
+  const maxWaterTempWidget = new ValueWidget( 'TEMP', maxValueContainer, true);
+  const maxOilTempWidget = new ValueWidget( 'OILT', maxValueContainer, true);
+  const maxOilPresure = new ValueWidget('OILP', maxValueContainer, true);
+  const standardFuelPressure = new ValueWidget('FUEL', maxValueContainer);
 
+  //** Race display **//
+  const shiftLight = new ShiftLight(5000, 7250);
+  const tachometer = new RpmGauge(7500, 7250);
 
-  let increment = 100;
-  let boostValue = -12;
-  let o2Value = 10;
+  const valueContainer = document.getElementById('value-container');
+  const intakeAirTempWidget = new ValueWidget( 'IAT', valueContainer);
+  const waterTempWidget = new ValueWidget('TEMP', valueContainer );
+  const oilTempWidget = new ValueWidget( 'OILT', valueContainer);
+  const oilPressureWidget = new ValueWidget( 'OilP', valueContainer);
+  const fuelPressureWidget = new ValueWidget('FUEL', valueContainer);
+  const boostWidget = new ValueWidget('BOOST', valueContainer);
 
   let counter = 0;
   const shouldUpdateChart = () => {
@@ -56,81 +73,53 @@ window.onload = function () {
     return false;
   };
 
-  // const socket = io.connect('http://localhost:3000');
-  // socket.on('sensor', onUpdateGauges);
+  const socket = io.connect('http://localhost:3000');
+  socket.on('sensor', onUpdateGauges);
 
   function onUpdateGauges(sensorData) {
-    const { wideband, boostPressure, waterTemp, oilPressure, intakeAirTemp, oilTemp, timestamp } = sensorData;
-    o2Gauge.updateValue(wideband);
-    boostGauge.update(boostPressure);
-    waterTempGauge.update(waterTemp);
+    const { boost, coolantTemp, oilTemp, voltage, iat, oilPressure, fuelPressure, tps, lambda, rpm, knockLevel, faultCode, gearPosition, timestamp } = sensorData;
+    o2Gauge.updateValue(lambda);
+    boostGauge.update(boost);
+    waterTempGauge.update(coolantTemp);
     oilPressureGauge.update(oilPressure);
-    intakeAirTempGauge.update(intakeAirTemp);
+    intakeAirTempGauge.update(iat);
     oilTempGauge.update(oilTemp);
+    standardFuelPressure.update(fuelPressure);
 
-    o2Readout.update(wideband);
+    o2Readout.update(lambda);
 
-    maxBoostWidget.update(boostPressure);
-    maxIntakeAirTempWidget.update(intakeAirTemp);
-    maxWaterTempWidget.update(waterTemp);
+    maxBoostWidget.update(boost);
+    maxIntakeAirTempWidget.update(iat);
+    maxWaterTempWidget.update(coolantTemp);
     maxOilTempWidget.update(oilTemp);
+    maxOilPresure.update(oilPressure);
 
-    setConditionalBackground(boostValue, o2Value);
+    shiftLight.update(rpm);
+    tachometer.update(rpm, gearPosition);
+
+    boostWidget.update(boost);
+    intakeAirTempWidget.update(iat);
+    waterTempWidget.update(coolantTemp);
+    oilPressureWidget.update(oilPressure);
+    oilTempWidget.update(oilTemp);
+    fuelPressureWidget.update(fuelPressure);
+
+    setConditionalBackground(boost, lambda);
 
     if (shouldUpdateChart()) {
-      addValueToDataset(boostPressure, datasets.boostPressure);
-      addValueToDataset(wideband, datasets.wideband);
-      addValueToDataset(waterTemp, datasets.engineTemp);
+      addValueToDataset(boost, datasets.boost);
+      addValueToDataset(lambda, datasets.wideband);
+      addValueToDataset(coolantTemp, datasets.engineTemp);
       addValueToDataset(oilTemp, datasets.oilTemp);
-      addValueToDataset(intakeAirTemp, datasets.iat);
+      addValueToDataset(iat, datasets.iat);
       addValueToDataset(oilPressure, datasets.oilPressure);
 
       rollingTimestamp.push(timestamp);
       rollingTimestamp.shift();
       updateTempChartData(rollingTimestamp, datasets.engineTemp, datasets.oilTemp, datasets.iat);
 
-      updateBoostChartData(rollingTimestamp, datasets.boostPressure, datasets.wideband, datasets.oilPressure);
+      updateBoostChartData(rollingTimestamp, datasets.boost, datasets.wideband, datasets.oilPressure);
     }
-
-    // TODO: remove
-    setTimeout(() => onUpdateGauges(getTestValues()), 100);
-  }
-
-  // TODO: remove
-  onUpdateGauges(getTestValues());
-  function getTestValues() {
-    const getBoostValue = () => {
-      increment += 1;
-      if (increment > 240) {
-        increment = 100;
-      }
-      boostValue += .2;
-      if (boostValue > 18) {
-        boostValue = -12;
-      }
-      return boostValue;
-    };
-
-    const getO2Value = () => {
-      o2Value = Math.random() > .5 ? o2Value -.5 : o2Value + .5;
-      if (o2Value > 20) {
-        o2Value = 19;
-      }
-      if (o2Value < 8) {
-        o2Value = 9;
-      }
-      return o2Value;
-    };
-
-    return {
-      boostPressure: getBoostValue(),
-      wideband: getO2Value(),
-      waterTemp: increment - 8,
-      oilPressure: increment - 90,
-      intakeAirTemp: increment -30,
-      oilTemp: increment,
-      timestamp: new Date(),
-    };
   }
 
   function getEmptyArray() {
@@ -142,21 +131,7 @@ window.onload = function () {
     dataset.shift();
   }
 
-  const maxValueContainer = document.getElementById('max-value-container');
-  const raceModeButton = document.createElement('button');
-  raceModeButton.id = 'race-mode-button';
-  raceModeButton.innerText = 'RACE';
-  maxValueContainer.append(raceModeButton);
 
-  raceModeButton.addEventListener('click', toggleRaceMode);
-  function toggleRaceMode() {
-    isRaceMode = !isRaceMode;
-    if (isRaceMode) {
-      raceModeButton.classList.add('race-mode');
-    } else {
-      raceModeButton.classList.remove('race-mode');
-    }
-  }
 
   function setConditionalBackground(boostValue, o2Value) {
     if (Math.sign(boostValue) !== 1) {

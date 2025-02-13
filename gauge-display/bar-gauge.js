@@ -116,7 +116,7 @@ export default class BarGauge {
   }
 
   displayText() {
-    this.textElement.innerText = this.currentValue.toFixed(this.decimalPlace);
+    this.textElement.innerText = this.currentValue;
   }
 
   get range() {
