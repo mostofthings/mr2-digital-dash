@@ -55,7 +55,7 @@ export class O2Gauge {
     }
 
     // sectors will go from .75 on left to 1.25 on right
-    const percent = newValue / 1.29;
+    const percent = (newValue - 0.75) / 1.29;
     const highlightedSectorIndex = Math.max(Math.min(Math.round(percent * 19), 19), 0);
 
     this.context.fillStyle = '#E53935';
