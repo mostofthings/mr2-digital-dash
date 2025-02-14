@@ -1,6 +1,6 @@
 # Raspberry Pi Digital Dash
 
-The goal of this project is to create a universal digital gauge readout for racecar applications. The core aims of this project are:
+This is a fork of my original project, which is a [Javascript Digital Dash](https://github.com/mostofthings/digital-dash). The goal this time around was a bit different. The intent was to create a small, heads-up-display style dash. This is going into a 1991 Toyota MR2, with a focus more on street driving and occasional grip-track use.
 
 ## To display easy to read data in an attractive format.
 
@@ -8,20 +8,38 @@ The final product should, as much as possible, look as good or better than a ban
 
 ## To offer short-term historical data readout.
 
-When driving a racecar under duress, it's often impossible to look at 7-plus-gauges and make sure that everything seems in spec. The ultimate goal of this project is to add a chart of recent historical data - think like a CPU monitor - of relevant data over a short period of time. In the pits or on the grid, the driver can peek at the data and make sure that all the systems of the car are healthy and well, even when operating under extreme conditions.
+Last time around this was a primary goal. The first dash is still alive and well inside an e36 drift car. While drifting you have very little time to pay attention to the state of your car while on track, so the focus was more short-term historical data.
+
+There are a few similar views here, but with more of a focus on real-time readout.
 
 ## To provide this functionality at minimal cost
 
-Fully outfitting a racecar dash can easily cost a couple thousand bucks. One of the goals of this project is to minimize financial input and maximize efficacy and accuracy. That, friends, is the American Dream. To this end, the physical hardware involved is as inexpensive as possible, and the sensors used will, as much as possible, be all off-the-shelf, readily-available, universally-fittable ones from your favorite Large Corporate Autoparts Store.
+Cost was again a consideration, with a Raspberry pi 4, an Arduino Uno, and a [Hyperpixel display](https://shop.pimoroni.com/products/hyperpixel-4?variant=12569485443155) were the bulk of the investment. I started down the path of installing dedicated sensors to read with the Arduino, but decided to tackle this at the same time as a long-term goal of standalone engine management for this car.
 
-On the computer hardware side, this project utilizes an Arduino Uno, a Raspberry Pi, and corresponding Pi 7" touch screen. I will be making use of a 3D printer, and wherever possible will be providing .stl files of any custom parts made. 
+## Integrating with canbus
 
-## To calibrate those sensors as accurately as possible
-
-It's one thing for it to be cheap, and another for it to be cheap AND good. Most automotive sensors operate by providing various levels of resistance under different circumstance, and using the Arduino, we use that resistance to monitor a reference voltage. Most sensors - cheap or expensive, are assumed to have a linear response. Early testing for this project indicates that that's not always the case. 
-
-While Mostly linear, a more curvilinear response is often seen. While this may not seem like that big of a deal, that's wholly dependent on where those curves are. In testing for the water temp sensor, the response of the sensor changes almost exponentially at the top end of its operating range - exactly where we need it the most. Various strategies will be employed to make sure that the readings on the gauge are the actual conditions going on in the car. 
+Given the ECU upgrade, I have all the data I need provided via canbus. I was able to achieve this with [a very inexpensive Canable board](https://www.amazon.com/dp/B0CRB8KXWL) and a node socketcan library.
 
 ## To allow this project to be replicated by others
 
-If you too have around $250, know your way around a Raspberry Pi functionally well, and possess a willingness to walk into an Autozone, you too can replicate this exact setup. I have in MY mind specific goals for functionality, but I'm sure others may want different results to match with their particular corner of the vehicular world. Other projects similar to this one already exist, but hopefully by providing expanded functionality and ample information, this too can gain a bit of traction. Ultimately, I'll be happy to have the results of this project for myself, but I'd love it if anyone else out there found some utility out of it as well.
+Between this and the other project, there's a decent amount of resource here for using Javascript to visualize your car's data.
+
+# Steps to Build
+
+### 1. Install the Display 
+
+Install the Hyperpixel display on the Raspberry pi and follow the instructions [found on their site](https://shop.pimoroni.com/products/hyperpixel-4?variant=12569485443155). There's an additional step for correct screen rotation and touch-screen functionality.
+
+### 2. Configure the canbus reader
+
+[This is a good guide on getting linux/raspberrian to bring up the canbus network interface automatically](https://askubuntu.com/questions/439613/automatically-bring-up-socketcan-network-interfaces-on-boot-can0)
+
+The project is hard-coded to receive and interpret the [Link ECU Generic Dash 2](https://forums.linkecu.com/topic/12141-g4x-can-files/) output data format. If anyone is working with any other canbus data formats, I'd be happy to help.
+
+### 3. Integrate Arduino features (optional)
+
+If you want niceties such as your dash dimming automatically with headligts and graceful shutdown, the scripts already exist in the project to handle these. You'll simply need an arduino sketch that handles the IO. The script got lost in an OS re-install, but when I re-write it soon and include it here in the project.
+
+### 4. System Autostart
+
+I was able to get the node script running on boot [using crontab @restart](https://stackoverflow.com/questions/21542304/how-to-start-a-node-js-app-on-system-boot), and am using [LXDE autostart](https://raspberrypi.stackexchange.com/questions/69204/open-chromium-full-screen-on-start-up) to open the browser fullscreen and navigate to the hosted site
