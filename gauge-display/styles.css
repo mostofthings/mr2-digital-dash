@@ -215,41 +215,53 @@ h1 {
 }
 
 #rpm-gauge {
-
 	position: relative;
 	top: 58px;
-	left: 25px;
+	left: -4px;
 	height: 235px;
-	width: 761px;
+	width: 781px;
 	background: linear-gradient(to right,  var(--blue)78%, #00000000 78%);
-	mask-image: url('./fillet-filled.svg');
-	-webkit-mask-image: url('./fillet-filled.svg');
+	mask-image: url('./rpm-gauge-filled.svg');
+	-webkit-mask-image: url('./rpm-gauge-filled.svg');
 	mask-repeat: no-repeat;
 	-webkit-mask-repeat: no-repeat;
-	mask-size: 100%;
-	-webkit-mask-size: 100%;
+	mask-size: 98%;
+	-webkit-mask-size: 98%;
 }
 
 
 #rpm-gauge-outline {
 	position: absolute;
-	height: 240px;
-	width: 775px;
-	top: 113px;
-	left: 37px;
-	background-color: grey;
-	mask-image: url('./fillet-outline.svg');
-	-webkit-mask-image: url('./fillet-outline.svg');
+	top: 0;
+	left: 0;
+	height: 248px;
+	width: 795px;
+	background-image: linear-gradient(to bottom, #979797, #7f7f7f, #676767, #515151, #3b3b3b);
+	mask-image: url('./rpm-gauge-outline.svg');
+	-webkit-mask-image: url('./rpm-gauge-outline.svg');
 	mask-repeat: no-repeat;
 	-webkit-mask-repeat: no-repeat;
 	mask-size: 100%;
 	-webkit-mask-size: 100%;
 }
+#rpm-gauge-container	{
+	position: absolute;
+	height: 240px;
+	width: 795px;
+	top: 108px;
+	left: 12px;
+	background-size: 100%;
+	background-image: url('./rpm-gauge-outline.svg');
+	-webkit-filter: drop-shadow(1px 1px 4px rgba(0,0,0,0.75));
+	-moz-filter: drop-shadow(1px 1px 4px rgba(0,0,0,0.75));
+	-ms-filter: drop-shadow(1px 1px 4px rgba(0,0,0,0.75));
+	-o-filter: drop-shadow(1px 1px 4px rgba(0,0,0,0.75));
+}
 
 #gear-indicator {
 	position: absolute;
-	top: 24px;
-	left: 33px;
+	top: 5px;
+	left: 7px;
 	font-size: 180px;
 }
 

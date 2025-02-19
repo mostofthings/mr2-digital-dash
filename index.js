@@ -172,10 +172,12 @@ function onReceiveArduinoMessage(rawData) {
 //** Shell **//
 function dimDash() {
   shell.exec('gpio -g mode 19 pwm && gpio -g pwm 19 21');
+  port.write('received');
 }
 
 function undimDash() {
   shell.exec('gpio -g mode 19 pwm && gpio -g pwm 19 1023');
+  port.write('received');
 }
 
 function shutdownPi() {
