@@ -59,7 +59,7 @@ window.onload = function () {
   const intakeAirTempWidget = new ValueWidget( 'IAT', valueContainer);
   const waterTempWidget = new ValueWidget('TEMP', valueContainer );
   const oilTempWidget = new ValueWidget( 'OILT', valueContainer);
-  const oilPressureWidget = new ValueWidget( 'OilP', valueContainer);
+  const oilPressureWidget = new ValueWidget( 'OILP', valueContainer);
   const fuelPressureWidget = new ValueWidget('FUEL', valueContainer);
   const boostWidget = new ValueWidget('BOOST', valueContainer);
 
