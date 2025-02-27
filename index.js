@@ -31,20 +31,24 @@ async function main() {
 }
 
 function handleRawMessages(message) {
-  const id = message.id;
-  switch (id) {
-  case 1:
-    parseFrame1(message.data);
-    break;
-  case 2:
-    parseFrame2(message.data);
-    break;
-  case 3:
-    parseFrame3(message.data);
-    break;
-  case 4:
-    parseFrame4(message.data);
-    break;
+  try {
+    const id = message.id;
+    switch (id) {
+    case 1:
+      parseFrame1(message.data);
+      break;
+    case 2:
+      parseFrame2(message.data);
+      break;
+    case 3:
+      parseFrame3(message.data);
+      break;
+    case 4:
+      parseFrame4(message.data);
+      break;
+    }
+  } catch (e) {
+    console.error(e);
   }
 }
 
@@ -120,24 +124,28 @@ function parseFrame4(data) {
 }
 
 function sendWebsocketData() {
-  const data = {
-    rpm: rpm.toString(),
-    boost: (kpaToPsi(boost)).toFixed(1),
-    iat: (celciusToDegF(iat)).toFixed(),
-    voltage: (voltage).toFixed(1),
-    oilTemp: (celciusToDegF(oilTemp)).toFixed(),
-    coolantTemp: (celciusToDegF(coolantTemp)).toFixed(),
-    oilPressure: kpaToPsi(oilPressure).toFixed(),
-    fuelPressure: kpaToPsi(fuelPressure).toFixed(),
-    tps: tps.toFixed(1),
-    lambda: lambda.toFixed(2),
-    knockLevel: knockLevel.toString(),
-    faultCode: faultCode.toString(),
-    gearPosition: gearPosition.toString(),
-    timestamp: new Date(),
-  };
+  try {
+    const data = {
+      rpm: rpm.toString(),
+      boost: (kpaToPsi(boost)).toFixed(1),
+      iat: (celciusToDegF(iat)).toFixed(),
+      voltage: (voltage).toFixed(1),
+      oilTemp: (celciusToDegF(oilTemp)).toFixed(),
+      coolantTemp: (celciusToDegF(coolantTemp)).toFixed(),
+      oilPressure: kpaToPsi(oilPressure).toFixed(),
+      fuelPressure: kpaToPsi(fuelPressure).toFixed(),
+      tps: tps.toFixed(1),
+      lambda: lambda.toFixed(2),
+      knockLevel: knockLevel.toString(),
+      faultCode: faultCode.toString(),
+      gearPosition: gearPosition.toString(),
+      timestamp: new Date(),
+    };
 
-  io.emit('sensor', data);
+    io.emit('sensor', data);
+  } catch (e) {
+    console.error(e);
+  }
 }
 setInterval(sendWebsocketData, 100);
 
