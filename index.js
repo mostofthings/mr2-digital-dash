@@ -27,6 +27,7 @@ async function main() {
   const channel = can.createRawChannel('can0');
 
   channel.addListener('onMessage', handleRawMessages);
+  channel.addListener('onStopped', (err) => console.log(err));
   channel.start();
 }
 
