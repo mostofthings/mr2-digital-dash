@@ -84,79 +84,63 @@ let hasData = false;
 // ---------------------------------------------------------------------------
 // Struct definitions
 // ---------------------------------------------------------------------------
-const rpmAndBoostStruct = new Struct(
-  Struct.Uint16('rpm'),
-  Struct.Uint16('boost'),
-  Struct.Uint8('coolantTemp'),
-  Struct.Uint8('iat'),
-  Struct.Uint8('voltage'),
-  Struct.Uint8('oilTemp')
+const frame2Struct = new Struct(
+    Struct.Uint16('engineSpeed'),
+    Struct.Uint16('map'),
+    Struct.Uint8('ect'),
+    Struct.Uint8('iat'),
+    Struct.Uint8('ecuVolts'),
+    Struct.Uint8('oilTemp')
 );
 
-const tpsStruct = new Struct(
-  Struct.Uint16('tps'),
-  Struct.Uint16('ignitionAngle'),
-  Struct.Uint8('wheelSpeed'),
-  Struct.Uint8('oilPressure'),
-  Struct.Uint8('fuelPressure'),
-  Struct.Uint8('ecuTemp'),
+const frame3Struct = new Struct(
+    Struct.Uint16('tps'),
+    Struct.Uint16('ignitionAngle'),
+    Struct.Uint8('wheelSpeed'),
+    Struct.Uint8('oilPressure'),
+    Struct.Uint8('fuelPressure'),
+    Struct.Uint8('ecuTemp')
 );
 
-const lambdaStruct = new Struct(
-  Struct.Uint16('lambda')
-);
-
-const knockStruct = new Struct(
-  Struct.Uint8('gearPosition'),
-  Struct.Uint8('fuelCut'),
-  Struct.Uint8('ignitionCut'),
-  Struct.Uint16('injectorPulseWidth'),
-  Struct.Uint8('faultCode'),
-  Struct.Uint16('knockLevel'),
+const frame4Struct = new Struct(
+    Struct.Uint16('lambda')
 );
 
 // ---------------------------------------------------------------------------
 // Frame parsers
 // ---------------------------------------------------------------------------
-function parseFrame1(frameData) {
-  if (frameData.length < FRAME_MIN_BYTES[1]) {
-    return;
-  }
-  const parsed = rpmAndBoostStruct.createObject(frameData.buffer, 0);
-  rpm         = parsed.rpm;
-  boost       = parsed.boost - 100;
-  coolantTemp = parsed.coolantTemp - 50;
-  iat         = parsed.iat - 50;
-  voltage     = parsed.voltage * 0.1;
-  oilTemp     = parsed.oilTemp - 50;
-}
-
 function parseFrame2(frameData) {
-  if (frameData.length < FRAME_MIN_BYTES[2]) {
-    return;
-  }
-  const parsed = tpsStruct.createObject(frameData.buffer, 0);
-  tps          = parsed.tps * 0.1;
-  oilPressure  = parsed.oilPressure * 10;
-  fuelPressure = parsed.fuelPressure * 10;
+  const p = frame2Struct.createObject(frameData.buffer, 0);
+
+  return {
+    rpm: p.engineSpeed,
+    map: p.map,
+    coolantTemp: p.ect - 50,
+    iat: p.iat - 50,
+    voltage: p.ecuVolts * 0.1,
+    oilTemp: p.oilTemp - 50,
+  };
 }
 
 function parseFrame3(frameData) {
-  if (frameData.length < FRAME_MIN_BYTES[3]) {
-    return;
-  }
-  const parsed = lambdaStruct.createObject(frameData.buffer, 0);
-  lambda       = parsed.lambda * 0.001;
+  const p = frame3Struct.createObject(frameData.buffer, 0);
+
+  return {
+    tps: p.tps * 0.1,
+    ignitionAngle: p.ignitionAngle * 0.1,
+    wheelSpeed: p.wheelSpeed,
+    oilPressure: p.oilPressure * 10,
+    fuelPressure: p.fuelPressure * 10,
+    ecuTemp: p.ecuTemp - 20,
+  };
 }
 
 function parseFrame4(frameData) {
-  if (frameData.length < FRAME_MIN_BYTES[4]) {
-    return;
-  }
-  const parsed = knockStruct.createObject(frameData.buffer, 0);
-  gearPosition = parsed.gearPosition;
-  knockLevel   = parsed.knockLevel * 5;
-  faultCode    = parsed.faultCode;
+  const p = frame4Struct.createObject(frameData.buffer, 0);
+
+  return {
+    lambda: p.lambda * 0.001,
+  };
 }
 
 // SeedCan frame shape: { id, ext, rtr, dlc, data }
@@ -164,9 +148,6 @@ function parseFrame4(frameData) {
 function handleRawMessages(message) {
   try {
     switch (message.id) {
-    case 1:
-      parseFrame1(message.data);
-      break;
     case 2:
       parseFrame2(message.data);
       break;
