@@ -4,10 +4,12 @@
   "description": "a node.js server that receives serial input from Arduino and passes it off through a websocket",
   "main": "index.js",
   "dependencies": {
+    "@binary-files/structjs": "^1.2.3",
     "express": "^4.17.1",
-    "serialport": "^8.0.7",
+    "serialport": "^13.0.0",
     "shelljs": "^0.8.5",
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.3.0",
+    "socketcan": "^4.0.5"
   },
   "devDependencies": {
     "eslint": "^8.49.0"
