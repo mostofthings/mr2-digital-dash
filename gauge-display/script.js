@@ -77,7 +77,6 @@ window.onload = function () {
   socket.on('sensor', onUpdateGauges);
 
   function onUpdateGauges(sensorData) {
-    console.log(sensorData);
     const { boost, coolantTemp, oilTemp, voltage, iat, oilPressure, fuelPressure, tps, lambda, rpm, knockLevel, faultCode, gearPosition, timestamp } = sensorData;
     o2Gauge.updateValue(lambda);
     boostGauge.update(boost);
