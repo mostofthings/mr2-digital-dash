@@ -4,14 +4,11 @@
 // const can = require('socketcan');
 
 const { exec }           = require('child_process');
-const struct             = require('@binary-files/structjs');
 const { SerialPort }     = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
 const express            = require('express');
 const socket             = require('socket.io');
 const SeedCan            = require('./seeedcan');
-
-const Struct = struct.Struct;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -38,11 +35,12 @@ const ARDUINO_MSG_LIGHTS_OFF = 'dash-lights-off';
 const ARDUINO_MSG_SHUTDOWN   = 'power-disconnected';
 
 // Minimum expected payload bytes per CAN frame ID
+// Base CAN ID is 2, so frames are on IDs 2, 3, 4, 5
 const FRAME_MIN_BYTES = {
-  1: 8,
   2: 8,
-  3: 2,
-  4: 7,
+  3: 8,
+  4: 2,
+  5: 7,
 };
 
 // ---------------------------------------------------------------------------
@@ -82,81 +80,60 @@ let gearPosition = 0;
 let hasData = false;
 
 // ---------------------------------------------------------------------------
-// Struct definitions
+// Frame parsers — Generic Dash 2, Big Endian (Motorola)
+// Base CAN ID 2 in PCLink, so frames arrive on IDs 2, 3, 4, 5
 // ---------------------------------------------------------------------------
-const frame2Struct = new Struct(
-    Struct.Uint16('engineSpeed'),
-    Struct.Uint16('map'),
-    Struct.Uint8('ect'),
-    Struct.Uint8('iat'),
-    Struct.Uint8('ecuVolts'),
-    Struct.Uint8('oilTemp')
-);
 
-const frame3Struct = new Struct(
-    Struct.Uint16('tps'),
-    Struct.Uint16('ignitionAngle'),
-    Struct.Uint8('wheelSpeed'),
-    Struct.Uint8('oilPressure'),
-    Struct.Uint8('fuelPressure'),
-    Struct.Uint8('ecuTemp')
-);
-
-const frame4Struct = new Struct(
-    Struct.Uint16('lambda')
-);
-
-// ---------------------------------------------------------------------------
-// Frame parsers
-// ---------------------------------------------------------------------------
-function parseFrame2(frameData) {
-  const p = frame2Struct.createObject(frameData.buffer, 0);
-
-  return {
-    rpm: p.engineSpeed,
-    map: p.map,
-    coolantTemp: p.ect - 50,
-    iat: p.iat - 50,
-    voltage: p.ecuVolts * 0.1,
-    oilTemp: p.oilTemp - 50,
-  };
+// ID 2 (X+0) — Engine Speed, MGP, ECT, IAT, ECU Volts, Oil Temp
+function parseFrame1(data) {
+  if (data.length < FRAME_MIN_BYTES[2]) return;
+  rpm         = data.readUInt16BE(0);         // Raw = RPM
+  boost       = data.readUInt16BE(2) - 100;   // Raw - 100 = kPa (MGP)
+  coolantTemp = data.readUInt8(4) - 50;       // Raw - 50 = deg C
+  iat         = data.readUInt8(5) - 50;       // Raw - 50 = deg C
+  voltage     = data.readUInt8(6) * 0.1;      // Raw * 0.1 = V
+  oilTemp     = data.readUInt8(7) - 50;       // Raw - 50 = deg C
 }
 
-function parseFrame3(frameData) {
-  const p = frame3Struct.createObject(frameData.buffer, 0);
-
-  return {
-    tps: p.tps * 0.1,
-    ignitionAngle: p.ignitionAngle * 0.1,
-    wheelSpeed: p.wheelSpeed,
-    oilPressure: p.oilPressure * 10,
-    fuelPressure: p.fuelPressure * 10,
-    ecuTemp: p.ecuTemp - 20,
-  };
+// ID 3 (X+1) — TPS, Ignition Angle, Wheel Speed, Oil Pressure, Fuel Pressure, ECU Temp
+function parseFrame2(data) {
+  if (data.length < FRAME_MIN_BYTES[3]) return;
+  tps          = data.readUInt16BE(0) * 0.1;  // Raw * 0.1 = %
+  // bytes 2-3: ignition angle — not used
+  // byte 4:    wheel speed — not used
+  oilPressure  = data.readUInt8(5) * 10;      // Raw * 10 = kPa
+  fuelPressure = data.readUInt8(6) * 10;      // Raw * 10 = kPa
+  // byte 7:    ECU temp — not used
 }
 
-function parseFrame4(frameData) {
-  const p = frame4Struct.createObject(frameData.buffer, 0);
-
-  return {
-    lambda: p.lambda * 0.001,
-  };
+// ID 4 (X+2) — Lambda 1, Lambda 2, Steering Position, Barometric Pressure
+function parseFrame3(data) {
+  if (data.length < FRAME_MIN_BYTES[4]) return;
+  lambda = data.readUInt16BE(0) * 0.001;      // Raw * 0.001 = Lambda
 }
 
+// ID 5 (X+3) — Gear, Fuel Cut, Ignition Cut, Injector PW, Fault Code, Knock
+function parseFrame4(data) {
+  if (data.length < FRAME_MIN_BYTES[5]) return;
+  gearPosition = data.readUInt8(0);           // Raw = gear 0-6
+  // byte 1: fuel cut % — not used
+  // byte 2: ignition cut % — not used
+  // bytes 3-4: injector PW — not used
+  faultCode    = data.readUInt8(5);           // Raw = fault code
+  knockLevel   = data.readUInt16BE(6) * 5;    // Raw * 5 = units
+}
+
+// ---------------------------------------------------------------------------
+// Frame router
 // SeedCan frame shape: { id, ext, rtr, dlc, data }
-// socketcan frame shape was: { id, data } — same field names, drop-in compatible
+// ---------------------------------------------------------------------------
 function handleRawMessages(message) {
   try {
     switch (message.id) {
-    case 2:
-      parseFrame2(message.data);
-      break;
-    case 3:
-      parseFrame3(message.data);
-      break;
-    case 4:
-      parseFrame4(message.data);
-      break;
+      case 2: parseFrame1(message.data); break;
+      case 3: parseFrame2(message.data); break;
+      case 4: parseFrame3(message.data); break;
+      case 5: parseFrame4(message.data); break;
     }
     hasData = true;
   } catch (error) {
@@ -210,9 +187,7 @@ canBus.open();
 // WebSocket broadcast — 10Hz, gated until first CAN frame arrives
 // ---------------------------------------------------------------------------
 function sendWebsocketData() {
-  if (!hasData) {
-    return;
-  }
+  if (!hasData) return;
   try {
     io.emit('sensor', {
       rpm:          rpm.toString(),
@@ -278,15 +253,15 @@ arduinoParser.on('data', onReceiveArduinoMessage);
 function onReceiveArduinoMessage(rawData) {
   const message = rawData.trim();
   switch (message) {
-  case ARDUINO_MSG_LIGHTS_ON:
-    dimDash();
-    break;
-  case ARDUINO_MSG_LIGHTS_OFF:
-    undimDash();
-    break;
-  case ARDUINO_MSG_SHUTDOWN:
-    shutdownPi();
-    break;
+    case ARDUINO_MSG_LIGHTS_ON:
+      dimDash();
+      break;
+    case ARDUINO_MSG_LIGHTS_OFF:
+      undimDash();
+      break;
+    case ARDUINO_MSG_SHUTDOWN:
+      shutdownPi();
+      break;
   }
 }
 
