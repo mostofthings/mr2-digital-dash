@@ -4,3 +4,4 @@ package-lock.json
 archive/
 gauge-display/charts
 gauge-display/lib
+/.idea/

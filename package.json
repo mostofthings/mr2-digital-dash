@@ -9,7 +9,7 @@
     "serialport": "^13.0.0",
     "shelljs": "^0.8.5",
     "socket.io": "^2.3.0",
-    "socketcan": "^4.0.5"
+    "ch340-can": "^1.0.0"
   },
   "devDependencies": {
     "eslint": "^8.49.0"
